@@ -1,0 +1,88 @@
+# Copyright 2024, Giordano Salvador
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM registry.fedoraproject.org/fedora:38
+
+LABEL maintainer="Giordano Salvador <73959795+e3m3@users.noreply.github.com>"
+USER root
+
+ENV HOME=/root
+RUN mkdir -p ${HOME}
+
+ENV TERM=xterm-256color
+ENV PROJECT_DIR=${HOME}/project
+
+RUN dnf upgrade -y
+
+# From getting_started.md (fedora38 + headless + virtualization options)
+RUN dnf install -y \
+    glew-devel \
+    mesa-libGLU-devel \
+    sqlite-devel \
+    libX11-devel \
+    mesa-libGL-devel \
+    pkgconf-pkg-config \
+    opencv-devel \
+    eigen3-devel \
+    glibc-devel \
+    spdlog-devel \
+    git \
+    opencv-devel
+
+# Missing dependencies in getting_started.md
+RUN dnf install -y cmake gcc g++ ninja-build boost boost-devel
+
+RUN dnf clean -y all
+
+RUN mkdir -p ${PROJECT_DIR}
+RUN mkdir -p ${PROJECT_DIR}/cmake
+RUN mkdir -p ${PROJECT_DIR}/common
+RUN mkdir -p ${PROJECT_DIR}/docs
+RUN mkdir -p ${PROJECT_DIR}/demo_data
+RUN mkdir -p ${PROJECT_DIR}/include
+RUN mkdir -p ${PROJECT_DIR}/plugins
+RUN mkdir -p ${PROJECT_DIR}/profiles
+RUN mkdir -p ${PROJECT_DIR}/qemu
+RUN mkdir -p ${PROJECT_DIR}/src
+
+COPY AUTHORS                ${PROJECT_DIR}/
+COPY CMakeLists.txt         ${PROJECT_DIR}/
+COPY CONTRIBUTORS           ${PROJECT_DIR}/
+COPY LICENSE                ${PROJECT_DIR}/
+COPY README.md              ${PROJECT_DIR}/
+COPY cmake                  ${PROJECT_DIR}/cmake/
+COPY common                 ${PROJECT_DIR}/common/
+COPY docs                   ${PROJECT_DIR}/docs/
+COPY demo_data              ${PROJECT_DIR}/demo_data/
+COPY include                ${PROJECT_DIR}/include/
+COPY plugins                ${PROJECT_DIR}/plugins/
+COPY qemu                   ${PROJECT_DIR}/qemu/
+COPY src                    ${PROJECT_DIR}/src/
+
+ENV PLUGINS=audio_pipeline,gldemo,ground_truth_slam,gtsam_integrator,offline_cam,offline_imu,pose_prediction
+
+WORKDIR ${PROJECT_DIR}
+RUN cmake \
+    -B ${PROJECT_DIR}/build \
+    -S ${PROJECT_DIR} \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=${PROJECT_DIR}/install \
+    -DUSE_AUDIO_PIPELINE=ON \
+    -DUSE_GLDEMO=ON \
+    -DUSE_GROUND_TRUTH_SLAM=ON \
+    -DUSE_GTSAM_INTEGRATOR=ON \
+    -DUSE_OFFLINE_CAM=ON \
+    -DUSE_OFFLINE_IMU=ON \
+    -DUSE_POSE_PREDICTION=ON
+RUN cmake --build ${PROJECT_DIR}/build -j4
+RUN cmake --build ${PROJECT_DIR}/build -t docs
+RUN cmake --install ${PROJECT_DIR}/build
+
+RUN ${PROJECT_DIR}/install/bin/main.opt.exe \
+    --duration=60 \
+    --demo_data=${PROJECT_DIR}/demo_data \
+    --enable_verbose_errors \
+    --plugins=${PLUGINS} \
+    --yaml=headless.yaml
+#   --data= \
