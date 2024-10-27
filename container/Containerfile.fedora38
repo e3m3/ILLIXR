@@ -26,11 +26,48 @@ RUN dnf install -y \
     eigen3-devel \
     glibc-devel \
     spdlog-devel \
-    git \
-    opencv-devel
+    git
 
 # Missing dependencies in getting_started.md
-RUN dnf install -y cmake gcc g++ ninja-build boost boost-devel
+RUN dnf install -y \
+    ninja-build \
+    boost-devel \
+    glslang-devel \
+    gflags-devel \
+    libjpeg-turbo-devel \
+    libpng-devel \
+    libtiff-devel \
+    systemd-udev \
+    systemd-devel \
+    wayland-devel \
+    wayland-protocols-devel \
+    libX11-xcb \
+    libxcb-devel \
+    libxkbcommon-devel \
+    openxr-devel \
+    vulkan-loader-devel \
+    SDL2-devel \
+    cmake \
+    gcc-c++ \
+    extra-cmake-modules \
+    glfw-devel \
+    libusb1-devel \
+    patch \
+    fmt-devel \
+    glog-devel \
+    openssl-devel \
+    SDL2-devel \
+    protobuf-devel \
+    protobuf-compiler \
+    graphviz \
+    hdf5-devel \
+    libcurl-devel \
+    qwt-qt5-devel \
+    qt5-qtbase-devel \
+    libyaml-devel \
+    zlib-devel \
+    librealsense-devel \
+    spdlog-devel
 
 RUN dnf clean -y all
 
@@ -58,6 +95,9 @@ COPY include                ${PROJECT_DIR}/include/
 COPY plugins                ${PROJECT_DIR}/plugins/
 COPY qemu                   ${PROJECT_DIR}/qemu/
 COPY src                    ${PROJECT_DIR}/src/
+
+RUN sed -i 's/^[ \t]*//g' /usr/lib64/pkgconfig/*
+RUN ln -s /usr/include /include
 
 ENV PLUGINS=audio_pipeline,gldemo,ground_truth_slam,gtsam_integrator,offline_cam,offline_imu,pose_prediction
 
